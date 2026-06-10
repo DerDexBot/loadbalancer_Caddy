@@ -19,25 +19,29 @@ def worker(worker_id: int):
     global errors
     session = requests.Session()
     while True:
+        delay = random.uniform(DELAY_MIN, DELAY_MAX)
+        time.sleep(delay)
         try:
             t0 = time.time()
             resp = session.get(TARGET, timeout=5)
             elapsed_ms = (time.time() - t0) * 1000
             data = resp.json()
-            server = data.get("server", "unbekannt")
+            server   = data.get("server",           "unbekannt")
+            handled  = data.get("requests_handled", "?")
+            uhrzeit  = time.strftime("%H:%M:%S")
             with lock:
                 stats[server] += 1
-            print(f"[Worker {worker_id:02d}] → {server:<12} | {resp.status_code} | {elapsed_ms:6.1f} ms")
+            print(f"\n{uhrzeit}  [Worker {worker_id}]  {server}  |  {resp.status_code}  |  {elapsed_ms:.0f} ms  |  Server-Zaehler: {handled}")
         except Exception as exc:
             with lock:
                 errors += 1
-            print(f"[Worker {worker_id:02d}] FEHLER: {exc}")
-        time.sleep(random.uniform(DELAY_MIN, DELAY_MAX))
+            uhrzeit = time.strftime("%H:%M:%S")
+            print(f"\n{uhrzeit}  [Worker {worker_id}]  FEHLER: {exc}")
 
 
 def stats_printer():
     while True:
-        time.sleep(15)
+        time.sleep(30)
         with lock:
             total = sum(stats.values())
             print("\n" + "=" * 50)
@@ -51,7 +55,11 @@ def stats_printer():
             print("=" * 50 + "\n")
 
 
-print(f"Stress-Generator startet — Ziel: {TARGET}  |  Workers: {WORKERS}  |  Delay: {DELAY_MIN}–{DELAY_MAX}s (zufaellig)")
+print("Stress-Generator startet")
+print(f"  Ziel    : {TARGET}")
+print(f"  Workers : {WORKERS} Threads")
+print(f"  Delay   : {DELAY_MIN}–{DELAY_MAX}s (zufaellig pro Anfrage)")
+print("  Statistik alle 30s\n")
 
 threads = [threading.Thread(target=worker, args=(i + 1,), daemon=True) for i in range(WORKERS)]
 threads.append(threading.Thread(target=stats_printer, daemon=True))

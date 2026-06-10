@@ -67,9 +67,9 @@ services:
     container_name: stress-generator
     environment:
       - TARGET_URL=http://caddy:80
-      - WORKERS=10
-      - DELAY_MIN=5
-      - DELAY_MAX=9
+      - WORKERS=3
+      - DELAY_MIN=10
+      - DELAY_MAX=15
     depends_on:
       - caddy
     networks:

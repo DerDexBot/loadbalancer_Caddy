@@ -1,7 +1,11 @@
 import os
 import time
 import socket
+import logging
 from flask import Flask, jsonify
+
+# Flask-/Werkzeug-Access-Logs deaktivieren (sonst doppelte Ausgabe)
+logging.getLogger("werkzeug").setLevel(logging.ERROR)
 
 app = Flask(__name__)
 
