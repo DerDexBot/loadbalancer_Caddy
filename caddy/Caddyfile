@@ -1,0 +1,33 @@
+:80 {
+
+    reverse_proxy backend1:8080 backend2:8080 backend3:8080 {
+
+        # ================================================================
+        # LASTVERTEILUNGS-STRATEGIE — genau EINE Zeile aktiv lassen:
+        # ================================================================
+
+        # Strategie 1: Round Robin — reihum, gleichmaessige Verteilung (Standard)
+        #lb_policy round_robin
+
+        # Strategie 2: Least Connections — zum Server mit den wenigsten aktiven Verbindungen
+        lb_policy least_conn
+
+        # Strategie 3: Random — zufaellige Auswahl
+        # lb_policy random
+
+        # Strategie 4: IP Hash — gleiche Client-IP landet immer beim gleichen Server (Session-Sticky)
+        # lb_policy ip_hash
+
+        # ================================================================
+
+        # Health-Check: Caddy prueft alle 10s ob die Server erreichbar sind
+        health_uri    /health
+        health_interval 10s
+        health_timeout  5s
+    }
+
+    log {
+        output stdout
+        format console
+    }
+}

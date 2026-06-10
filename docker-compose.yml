@@ -1,0 +1,81 @@
+services:
+
+  # ────────────────────────────────────────────────
+  # Load Balancer (Caddy)
+  # Strategie in caddy/Caddyfile aendern
+  # ────────────────────────────────────────────────
+  caddy:
+    image: caddy:2-alpine
+    container_name: loadbalancer
+    ports:
+      - "80:80"       # Haupteingang — von aussen erreichbar
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      - backend1
+      - backend2
+      - backend3
+    networks:
+      - lb-network
+    restart: unless-stopped
+
+  # ────────────────────────────────────────────────
+  # Backend-Server 1, 2, 3
+  # Direkt erreichbar: localhost:8081 / 8082 / 8083
+  # ────────────────────────────────────────────────
+  backend1:
+    build: ./backend
+    container_name: backend1
+    environment:
+      - SERVER_ID=backend1
+    ports:
+      - "8081:8080"   # Direktzugriff von aussen
+    networks:
+      - lb-network
+    restart: unless-stopped
+
+  backend2:
+    build: ./backend
+    container_name: backend2
+    environment:
+      - SERVER_ID=backend2
+    ports:
+      - "8082:8080"
+    networks:
+      - lb-network
+    restart: unless-stopped
+
+  backend3:
+    build: ./backend
+    container_name: backend3
+    environment:
+      - SERVER_ID=backend3
+    ports:
+      - "8083:8080"
+    networks:
+      - lb-network
+    restart: unless-stopped
+
+  # ────────────────────────────────────────────────
+  # Stress-Generator
+  # WORKERS:   Anzahl paralleler Threads
+  # DELAY_MIN: minimale Wartezeit pro Worker (Sek.)
+  # DELAY_MAX: maximale Wartezeit pro Worker (Sek.)
+  # ────────────────────────────────────────────────
+  stress-generator:
+    build: ./stress-generator
+    container_name: stress-generator
+    environment:
+      - TARGET_URL=http://caddy:80
+      - WORKERS=10
+      - DELAY_MIN=5
+      - DELAY_MAX=9
+    depends_on:
+      - caddy
+    networks:
+      - lb-network
+    restart: unless-stopped
+
+networks:
+  lb-network:
+    driver: bridge
